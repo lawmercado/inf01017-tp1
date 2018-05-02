@@ -1,28 +1,14 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 from __future__ import division
 from __future__ import print_function
 import csv
-from data.transformation import NumericDataTransformer
-from ml.supervised.evaluation import knn_kcrossvalidation
-from ml.supervised.evaluation import knn_repeatedkcrossvalidation
-from ml.supervised.evaluation import get_statistics
+from data.handler import DataHandler
+from ml.supervised.algorithms import dt
 
-rows = list(csv.reader(open('diabetes.csv', 'r')))
+rows = list(csv.reader(open('dados_benchmark_ad.csv', 'r'), delimiter=';'))
 
-data_transformer = NumericDataTransformer(rows, 'Outcome')
+data_handler = DataHandler(rows, 'Joga')
 
-print("\nCross validation with 5 folds and 5 nearest neighbors:")
-print(get_statistics(knn_kcrossvalidation(data_transformer, 5, 5)))
-
-print("\nCross validation with 10 folds and 5 nearest neighbors:")
-print(get_statistics(knn_kcrossvalidation(data_transformer, 5, 10)))
-
-print("\nRepeated cross validation with 10 iterations, 10 folds and 3 nearest neighbours:")
-print(get_statistics(knn_repeatedkcrossvalidation(data_transformer, 3, 10, 10)))
-
-print("\nRepeated cross validation with 10 iterations, 10 folds and 5 nearest neighbours:")
-print(get_statistics(knn_repeatedkcrossvalidation(data_transformer, 5, 10, 10)))
-
-print("\nRepeated cross validation with 10 iterations, 10 folds and 7 nearest neighbours:")
-print(get_statistics(knn_repeatedkcrossvalidation(data_transformer, 7, 10, 10)))
+dt(data_handler)

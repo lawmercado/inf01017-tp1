@@ -1,4 +1,4 @@
-# inf01017-tpe1
-K-fold cross validation implementation, testing with the knn generalization algorithm.
+# inf01017-tp1
+Random trees classification implementation using bootstrapping and using k-fold for validation
 
-This is the first extra assignment of the discipline INF01017, from UFRGS.
+This is the first assignment of the discipline INF01017, from UFRGS.

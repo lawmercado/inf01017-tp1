@@ -1,9 +1,12 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
+from __future__ import division
 import sys
+import math
 
 
-def __euclidean_distance(pa, pb):
+def __knn_euclidean_distance(pa, pb):
     distance = 0
 
     for idx, position in enumerate(pa):
@@ -30,7 +33,7 @@ def knn(instances, test_instances, k):
         distances_idx = [0 for i in range(0, k)]
 
         for idx_instance, instance in enumerate(instances):
-            instance_distance = __euclidean_distance(instance[0], test_instance)
+            instance_distance = __knn_euclidean_distance(instance[0], test_instance)
 
             for idx_distance, distance in enumerate(distances):
                 if distance > instance_distance:
@@ -56,3 +59,50 @@ def knn(instances, test_instances, k):
         classified.append((test_instance, winner))
 
     return classified
+
+
+def __information_gain(data_handler, attr):
+    by_atributes = data_handler.by_attributes()
+
+    value_count = {}
+
+    print("\n" + attr)
+
+    total_values = len(by_atributes[attr])
+
+    for value in by_atributes[attr]:
+        if value in list(value_count):
+            value_count[value] += 1
+        else:
+            value_count[value] = 1
+
+    info_attr = 0
+
+    for value in value_count:
+        print(attr + " = " + value)
+        print(__information(data_handler.filter_by_attr_value(attr, value)))
+        info_attr += (value_count[value]/total_values) * __information(data_handler.filter_by_attr_value(attr, value))
+
+    info = __information(data_handler);
+
+    print(info - info_attr)
+
+
+def __information(data_handler):
+    data_by_class = data_handler.by_class_attribute_values()
+
+    total_instances = len(data_handler.as_instances())
+
+    info = 0
+
+    for yi in data_by_class:
+        pi = len(data_by_class[yi]) / total_instances
+
+        info -= pi * math.log(pi, 2)
+
+    return info
+
+
+def dt(data_handler):
+    for key in data_handler.attributes():
+        __information_gain(data_handler, key)
