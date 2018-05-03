@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division
+from .classes.DecisionTree import DecisionTree
 import sys
-import math
 
 
 def __knn_euclidean_distance(pa, pb):
@@ -61,48 +61,6 @@ def knn(instances, test_instances, k):
     return classified
 
 
-def __information_gain(data_handler, attr):
-    by_atributes = data_handler.by_attributes()
-
-    value_count = {}
-
-    print("\n" + attr)
-
-    total_values = len(by_atributes[attr])
-
-    for value in by_atributes[attr]:
-        if value in list(value_count):
-            value_count[value] += 1
-        else:
-            value_count[value] = 1
-
-    info_attr = 0
-
-    for value in value_count:
-        print(attr + " = " + value)
-        print(__information(data_handler.filter_by_attr_value(attr, value)))
-        info_attr += (value_count[value]/total_values) * __information(data_handler.filter_by_attr_value(attr, value))
-
-    info = __information(data_handler);
-
-    print(info - info_attr)
-
-
-def __information(data_handler):
-    data_by_class = data_handler.by_class_attribute_values()
-
-    total_instances = len(data_handler.as_instances())
-
-    info = 0
-
-    for yi in data_by_class:
-        pi = len(data_by_class[yi]) / total_instances
-
-        info -= pi * math.log(pi, 2)
-
-    return info
-
-
 def dt(data_handler):
-    for key in data_handler.attributes():
-        __information_gain(data_handler, key)
+    return DecisionTree(data_handler, data_handler.attributes())
+

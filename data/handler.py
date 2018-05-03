@@ -159,7 +159,7 @@ class DataHandler(object):
         to_remove_items = []
 
         for idx_item, item in enumerate(by_attributes[attr]):
-            if item == value:
+            if item != value:
                 # +1 to avoid conflict when dealing with the data and it's attributes names
                 to_remove_items.append(idx_item + 1)
 
@@ -170,7 +170,7 @@ class DataHandler(object):
     def __as_raw_data(self):
         attributes = list([self.__attr])
 
-        return attributes + list(self.__data)
+        return list(attributes + list(self.__data))
 
 
 class NumericDataHandler(DataHandler):

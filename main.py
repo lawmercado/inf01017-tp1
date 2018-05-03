@@ -11,4 +11,5 @@ rows = list(csv.reader(open('dados_benchmark_ad.csv', 'r'), delimiter=';'))
 
 data_handler = DataHandler(rows, 'Joga')
 
-dt(data_handler)
+print("\nÁrvore gerada:")
+print(dt(data_handler))
