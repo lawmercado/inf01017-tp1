@@ -7,9 +7,11 @@ import csv
 from data.handler import DataHandler
 from ml.supervised.algorithms import dt
 
-rows = list(csv.reader(open('dados_benchmark_ad.csv', 'r'), delimiter=';'))
-
+'''rows = list(csv.reader(open('dados_benchmark_ad.csv', 'r'), delimiter=';'))
 data_handler = DataHandler(rows, 'Joga')
+print(data_handler.by_attributes())'''
 
-print("\nÁrvore gerada:")
+rows = list(csv.reader(open('diabetes.csv', 'r'), delimiter=','))
+data_handler = DataHandler(rows, 'Outcome')
+
 print(dt(data_handler))

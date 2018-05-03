@@ -10,12 +10,14 @@ class DecisionTree(object):
     __dt = None
 
     def __init__(self, data_handler, attributes):
-        self.__dt = self.__generate(data_handler, attributes)
+        print(data_handler.discretize().by_attributes())
+
+        self.__dt = self.__generate(data_handler.discretize(), attributes)
 
     def __generate(self, data_handler, attributes):
         node = {"attr": None, "value": {}}
 
-        by_class = data_handler.by_class_attribute_values()
+        by_class = data_handler.by_class_attr_values()
         classes = list(by_class.keys())
 
         if len(classes) == 1:
@@ -31,7 +33,7 @@ class DecisionTree(object):
         else:
             most_informative_attr = self.__get_most_informative_attr(data_handler, attributes)
 
-            print("\nAtributo escolhido: " + most_informative_attr)
+            #print("\nAtributo escolhido: " + most_informative_attr)
 
             node["attr"] = most_informative_attr
 
@@ -42,7 +44,7 @@ class DecisionTree(object):
             values = list(set(by_attributes[most_informative_attr]))
 
             for value in values:
-                print("\n" + most_informative_attr + " - valor: " + value)
+                #print("\n" + most_informative_attr + " - valor: " + value)
 
                 sub_data_handler = data_handler.filter_by_attr_value(most_informative_attr, value)
 
@@ -52,31 +54,31 @@ class DecisionTree(object):
 
     def __information_gain(self, data_handler, attr):
         by_attributes = data_handler.by_attributes()
-
         value_count = {}
-
         total_values = len(by_attributes[attr])
+        info_attr = 0
 
+        print(attr)
         for value in by_attributes[attr]:
             if value in list(value_count):
                 value_count[value] += 1
             else:
                 value_count[value] = 1
 
-        info_attr = 0
+        print(value_count)
 
         for value in value_count:
             info = self.__information(data_handler.filter_by_attr_value(attr, value))
             info_attr += ((value_count[value] / total_values) * info)
 
-        print("\nEntropia média para o atributo '" + attr + "': " + str(info_attr))
+        #print("\nEntropia média para o atributo '" + attr + "': " + str(info_attr))
 
         info = self.__information(data_handler)
 
         return info - info_attr
 
     def __information(self, data_handler):
-        data_by_class = data_handler.by_class_attribute_values()
+        data_by_class = data_handler.by_class_attr_values()
 
         total_instances = len(data_handler.as_instances())
 
@@ -96,12 +98,12 @@ class DecisionTree(object):
             info_gain = self.__information_gain(data_handler, attr)
             info_gain_by_attribute[attr] = info_gain
 
-            print("Ganho de informação para o atributo '" + attr + "': " + str(info_gain))
+            #print("Ganho de informação para o atributo '" + attr + "': " + str(info_gain))
 
         return max(info_gain_by_attribute, key=info_gain_by_attribute.get)
 
     def __get_most_occurred_class(self, data_handler):
-        by_class = data_handler.by_class_attribute_values()
+        by_class = data_handler.by_class_attr_values()
 
         most_occurred_class_count = max(len(value) for value in by_class.values())
         most_occurred_class = [k for k, value in by_class.items() if len(value) == most_occurred_class_count]
@@ -111,13 +113,13 @@ class DecisionTree(object):
     def __tree_as_string(self, node, level):
 
         if node["attr"] is None:
-            return ("\t" * level) + "-Class: " + node["value"] + "\n"
+            return ("\t" * level) + "-Class: " + str(node["value"]) + "\n"
 
         else:
             text = ("\t" * level) + "-Attr: " + node["attr"] + "\n"
 
             for item in node["value"]:
-                text += ("\t" * level) + "-Value: " + item + "\n"
+                text += ("\t" * level) + "-Value: " + str(item) + "\n"
                 text += self.__tree_as_string(node["value"][item], (level + 1))
 
             return text

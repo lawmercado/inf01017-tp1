@@ -17,7 +17,7 @@ class DataHandler(object):
     __data_by_attributes = {}
     __data_as_instances = []
 
-    def __init__(self, raw_data, class_attr):
+    def __init__(self, raw_data, class_attr, normalize=False):
         """
         Constructor of the class
 
@@ -29,31 +29,86 @@ class DataHandler(object):
         self.__attr = self.__data.pop(0)
         self.__class_attr = class_attr
 
-    def attributes(self):
-        return list(set(self.__attr).difference([self.__class_attr]))
-
-    def by_attributes(self):
-        if bool(self.__data_by_attributes):
-            return self.__data_by_attributes
-
         data = {}
 
         for idx_attr, attr in enumerate(self.__attr):
             data[attr] = []
 
             for row in self.__data:
-                try:
-                    data[attr].append(self.__process_raw_data_value(row[idx_attr]))
-                except ValueError:
-                    pass
+                data[attr].append(self.__process_raw_data_value(row[idx_attr]))
 
         # Saves for further use
-        self.__data_by_attributes = data
+        if normalize:
+            self.__data_by_attributes = self.__normalize(data)
+        else:
+            self.__data_by_attributes = data
 
-        return data
+    def attributes(self):
+        return list(set(self.__attr).difference([self.__class_attr]))
+
+    def by_attributes(self):
+        if bool(self.__data_by_attributes):
+            return dict(self.__data_by_attributes)
 
     def __process_raw_data_value(self, record):
-        return record.strip()
+        value = record.strip()
+
+        try:
+            return float(value)
+
+        except ValueError:
+            return value
+
+    def __normalize(self, data):
+        """
+        Normalizes the data represented by an dictionary
+
+        :return: A list with the normalized data
+        :rtype: list
+        """
+
+        averages = self.__get_averages(data)
+        std_deviations = self.__get_std_deviations(data, averages)
+
+        normalized_data = {key: [] for key in data}
+
+        for key in data:
+            for item in data[key]:
+                try:
+                    normalized_item = (item - averages[key]) / std_deviations[key]
+                    normalized_data[key].append(normalized_item)
+                except (TypeError, ZeroDivisionError):
+                    normalized_data[key].append(item)
+
+        return normalized_data
+
+    def __get_averages(self, data):
+        averages = {key: 0 for key in data}
+
+        for key in data:
+            try:
+                for item in data[key]:
+                    averages[key] += item
+
+                averages[key] = averages[key] / len(data[key])
+            except TypeError:
+                pass
+
+        return averages
+
+    def __get_std_deviations(self, data, averages):
+        std_deviations = {key: 0 for key in data}
+
+        for key in data:
+            try:
+                for item in data[key]:
+                    std_deviations[key] += (item - averages[key]) ** 2
+
+                std_deviations[key] = (std_deviations[key] / (len(data[key]) - 1)) ** 0.5
+            except TypeError:
+                pass
+
+        return std_deviations
 
     def as_instances(self):
         """
@@ -65,22 +120,20 @@ class DataHandler(object):
         """
 
         if self.__data_as_instances:
-            return self.__data_as_instances
+            return dict(self.__data_as_instances)
 
         data = self.by_attributes()
 
         classes = data[self.__class_attr]
         data.pop(self.__class_attr)
 
-        normalized_data = self.normalize()
-
         instances = []
 
         for x in range(0, len(classes)):
             instances.append(())
 
-        for key in normalized_data:
-            for idx_value, value in enumerate(normalized_data[key]):
+        for key in data:
+            for idx_value, value in enumerate(data[key]):
                 instances[idx_value] = instances[idx_value] + (value,)
 
         instances = [(instance, classes[idx_instance]) for idx_instance, instance in enumerate(instances)]
@@ -88,9 +141,9 @@ class DataHandler(object):
         # Saves for further use
         self.__data_as_instances = instances
 
-        return instances
+        return list(self.__data_as_instances)
 
-    def by_class_attribute_values(self):
+    def by_class_attr_values(self):
         instances = self.as_instances()
 
         data = {instance[1]: [] for instance in instances}
@@ -100,8 +153,15 @@ class DataHandler(object):
 
         return data
 
-    def normalize(self):
-        return self.by_attributes()
+    def get_average_for_attr(self, attr):
+        data = self.by_attributes()
+
+        average = 0
+
+        for item in data[attr]:
+            average += item
+
+        return average / len(data[attr])
 
     def stratify(self, k_folds):
         """
@@ -115,7 +175,7 @@ class DataHandler(object):
         random.seed(None)
 
         instances = self.as_instances()
-        data = self.by_class_attribute_values()
+        data = self.by_class_attr_values()
 
         folds = [[] for i in range(0, k_folds)]
 
@@ -140,7 +200,7 @@ class DataHandler(object):
 
         return folds
 
-    def filter_by_attr_value(self, attr, value):
+    def filter_by_attr_value(self, attr, value, exp="=="):
         """
         Generates a new DataHandler, with the data filtered by the attribute value
 
@@ -150,7 +210,7 @@ class DataHandler(object):
         :rtype: DataHandler
         """
 
-        raw_data = self.__as_raw_data()
+        raw_data = self.as_raw_data()
 
         data_handler = DataHandler(raw_data, self.__class_attr)
 
@@ -159,7 +219,9 @@ class DataHandler(object):
         to_remove_items = []
 
         for idx_item, item in enumerate(by_attributes[attr]):
-            if item != value:
+            expression = "item" + exp + "value"
+
+            if not bool(eval(expression)):
                 # +1 to avoid conflict when dealing with the data and it's attributes names
                 to_remove_items.append(idx_item + 1)
 
@@ -167,65 +229,28 @@ class DataHandler(object):
 
         return DataHandler(filtered_raw_data, self.__class_attr)
 
-    def __as_raw_data(self):
+    def discretize(self):
+        by_attributes = self.by_attributes()
+        raw_data = self.as_raw_data()
+
+        for attr in self.attributes():
+            average = int(self.get_average_for_attr(attr))
+
+            idx_attr = raw_data[0].index(attr)
+
+            for idx_value in range(1, len(by_attributes[attr])):
+                if by_attributes[attr][idx_value] <= average:
+                    new_value = "<=" + str(average)
+                else:
+                    new_value = ">" + str(average)
+
+
+                ### AQUIE TEM ALGUM PROBLEMINHA
+                raw_data[idx_value][idx_attr] = new_value
+
+        return DataHandler(raw_data, self.__class_attr)
+
+    def as_raw_data(self):
         attributes = list([self.__attr])
 
         return list(attributes + list(self.__data))
-
-
-class NumericDataHandler(DataHandler):
-    """
-    A class for numeric raw data manipulation into specific structures
-
-    """
-
-    def __process_raw_data_value(self, record):
-        return float(record.strip())
-
-    def __get_average(self):
-        data = self.by_attributes()
-
-        averages = {key: 0 for key in data}
-
-        for key in data:
-            for item in data[key]:
-                averages[key] += item
-
-            averages[key] = averages[key] / len(data[key])
-
-        return averages
-
-    def __get_std_deviations(self, averages):
-        data = self.by_attributes()
-
-        std_deviations = {key: 0 for key in data}
-
-        for key in data:
-            for item in data[key]:
-                std_deviations[key] += (item - averages[key]) ** 2
-
-            std_deviations[key] = (std_deviations[key] / (len(data[key]) - 1)) ** 0.5
-
-        return std_deviations
-
-    def normalize(self):
-        """
-        Normalizes the data represented by an dictionary
-
-        :return: A list with the normalized data
-        :rtype: list
-        """
-
-        data = self.by_attributes()
-
-        averages = self.__get_average()
-        std_deviations = self.__get_std_deviations(averages)
-
-        normalized_data = {key: [] for key in data}
-
-        for key in data:
-            for item in data[key]:
-                normalized_item = (item - averages[key]) / std_deviations[key]
-                normalized_data[key].append(normalized_item)
-
-        return normalized_data
