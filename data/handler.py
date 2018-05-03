@@ -172,6 +172,32 @@ class DataHandler(object):
 
         return list(attributes + list(self.__data))
 
+    def make_bootstrap(self, ratio=1.0):
+        data = self.__data
+
+        bootstrap = []
+        bootstrap_size = round(len(data) * ratio)
+
+        while len(bootstrap) < bootstrap_size:
+            index = random.randrange(len(data))
+            bootstrap.append(data[index])
+
+        return bootstrap
+
+    def bootstrap_handler(self, bootstrap):
+        raw_bootstrap = list(list([self.__attr]) + bootstrap)
+        handler = DataHandler(raw_bootstrap, self.__class_attr)
+        return handler
+
+    def bagging(self, k):
+        bootstraps = []
+
+        for i in range(k):
+            b_handler = self.bootstrap_handler(self.make_bootstrap())
+            bootstraps.append(b_handler)
+
+        return bootstraps
+
 
 class NumericDataHandler(DataHandler):
     """
