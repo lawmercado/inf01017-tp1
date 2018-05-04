@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division
-from .classes.DecisionTreeID3 import DecisionTreeID3
+from .classes.id3_decision_tree import ID3DecisionTree
+import logging
 import sys
+
+logger = logging.getLogger("main")
 
 
 def __knn_euclidean_distance(pa, pb):
@@ -15,7 +18,7 @@ def __knn_euclidean_distance(pa, pb):
     return distance**0.5
 
 
-def knn(instances, test_instances, k):
+def knn_classification(instances, test_instances, k):
     """
     Calculates the k nearest neighbor's and predicts the class of the new test_instances (tries)
 
@@ -61,22 +64,38 @@ def knn(instances, test_instances, k):
     return classified
 
 
-def dt(data_handler):
-    return DecisionTreeID3(data_handler, data_handler.attributes())
+def decision_tree_classification(tree, test_instances):
+    classified = []
 
-def random_trees(data_handler, test_instances, k):
+    for test_instance in test_instances:
+        classified.append((test_instance, tree.classify()))
+
+    return classified
+
+
+def random_trees_classification(data_handler, test_instances, k):
     trees = []
+    classified = []
+
     bag = data_handler.bagging(k)
 
     for bootstrap in bag:
-        trees.append(DecisionTreeID3(bootstrap, bootstrap.attributes()))
+        trees.append(ID3DecisionTree(bootstrap, bootstrap.attributes()))
 
-    instances = data_handler.as_instances()
+    for test_instance in test_instances:
+        classifications = []
 
-    trees = [dt(bag[0])]
+        for tree in trees:
+            logger.debug("Testing: " + str(test_instance))
+            tree_classification = tree.classify(test_instance)
+            logger.debug("Classified (by one of the trees) as " + str(tree_classification))
 
-    for tree in trees:
-        print(tree)
-        print("Instance: " + str(instances[0][0]))
-        print("Classification: " + str(tree.classify(instances[0][0])))
+            classifications.append(tree_classification)
 
+        counter = {tree_classification: classifications.count(tree_classification) for tree_classification in classifications}
+
+        ensemble_result = max(counter, key=lambda key: counter[key])
+
+        classified.append((test_instance, ensemble_result))
+
+    return classified

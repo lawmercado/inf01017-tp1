@@ -2,11 +2,11 @@
 
 from __future__ import division
 from __future__ import print_function
-from ml.supervised.algorithms import knn
+from ml.supervised.algorithms import knn_classification
 
 
-def knn_kcrossvalidation(data_transformer, knn_factor, k_folds):
-    folds = data_transformer.stratify(k_folds)
+def knn_kcrossvalidation(data_handler, knn_factor, k_folds):
+    folds = data_handler.stratify(k_folds)
 
     measures = {"acc": [], "f-measure": []}
 
@@ -18,7 +18,7 @@ def knn_kcrossvalidation(data_transformer, knn_factor, k_folds):
         for aux_fold in aux_folds:
             train_instances += aux_fold
 
-        classified_instances = knn(train_instances, test_instances, knn_factor)
+        classified_instances = knn_classification(train_instances, test_instances, knn_factor)
 
         # Compare classified instances with the test set
         correct_classifications = 0

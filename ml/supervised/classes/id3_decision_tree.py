@@ -5,15 +5,19 @@ from __future__ import division
 import logging
 import math
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("main")
 
 
-class DecisionTreeID3(object):
+class ID3DecisionTree(object):
 
     __dt = None
 
     def __init__(self, data_handler, attributes):
+        logger.debug("Generating tree...")
+
         self.__dt = self.__generate(data_handler.discretize(), attributes)
+
+        logger.debug("Generated tree: \n" + str(self))
 
     def __generate(self, data_handler, attributes):
         node = {"attr": None, "value": {}}
@@ -42,7 +46,9 @@ class DecisionTreeID3(object):
             try:
                 attributes.remove(most_informative_attr)
             except ValueError:
-                pass
+                # Quando o ganho é 0
+                most_informative_attr = attributes[0]
+                attributes.clear()
 
             by_attributes = data_handler.by_attributes()
 
@@ -57,6 +63,12 @@ class DecisionTreeID3(object):
 
                 sub_data_handler = data_handler.filter_by_attr_value(most_informative_attr, value)
 
+                if len(sub_data_handler.as_instances()) == 0:
+                    node["attr"] = None
+                    node["value"] = self.__get_most_occurred_class(data_handler)
+
+                    return node
+
                 node["value"][value] = self.__generate(sub_data_handler, attributes)
 
             return node
@@ -68,17 +80,14 @@ class DecisionTreeID3(object):
 
         for attr in attributes:
             info_gain = self.__information_gain(data_handler, attr)
+
             info_gain_by_attribute[data_handler.attributes().index(attr)] = info_gain
 
             average_gain += info_gain
 
             logger.debug("Info. gain for '" + attr + "': " + str(info_gain))
 
-        if len(attributes) > 1:
-            return info_gain_by_attribute.index(max(info_gain_by_attribute))
-
-        else:
-            return data_handler.attributes().index(attributes[0])
+        return info_gain_by_attribute.index(max(info_gain_by_attribute))
 
     def __information_gain(self, data_handler, attr):
         by_attributes = data_handler.by_attributes()
@@ -126,7 +135,6 @@ class DecisionTreeID3(object):
         return most_occurred_class[0]
 
     def __tree_as_string(self, node, level):
-
         if node["attr"] is None:
             return ("|\t" * level) + "|Class: " + str(node["value"]) + "\n"
 
@@ -140,22 +148,28 @@ class DecisionTreeID3(object):
             return text
 
     def classify(self, test_instance):
-        return self.__walkthrough(self.__dt, test_instance)
+        node = self.__dt
 
-    def __walkthrough(self, node, test_instance):
-        if node["attr"] is None:
-            return node["value"]
+        while node["attr"] is not None:
+            bk_node = node
 
-        else:
             for value in node["value"]:
                 if isinstance(test_instance[node["attr"][0]], float):
                     expression = str(test_instance[node["attr"][0]]) + value
 
                     if bool(eval(expression)):
-                        return self.__walkthrough(node["value"][value], test_instance)
+                        node = node["value"][value]
+                        break
 
                 if test_instance[node["attr"][0]] == value:
-                    return self.__walkthrough(node["value"][value], test_instance)
+                    node = node["value"][value]
+                    break
+
+            # In case of no value match, force a change
+            if node == bk_node:
+                node = node["value"][value]
+
+        return node["value"]
 
     def __str__(self):
-        return "Generated tree: \n" + self.__tree_as_string(self.__dt, 0).strip()
+        return self.__tree_as_string(self.__dt, 0).strip()

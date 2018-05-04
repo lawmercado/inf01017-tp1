@@ -6,7 +6,7 @@ import logging
 import random
 import copy
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("main")
 
 
 class DataHandler(object):
@@ -294,8 +294,8 @@ class DataHandler(object):
                         new_value = ">" + str(average)
 
                     raw_data[idx_value][idx_attr] = new_value
-            except TypeError as e:
-                logger.error(e)
+            except TypeError:
+                pass
 
         return DataHandler(raw_data, self.__class_attr)
 
