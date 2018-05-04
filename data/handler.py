@@ -186,12 +186,72 @@ class DataHandler(object):
 
         return average / len(data[self.attributes().index(attr)])
 
-    def stratify(self, k_folds):
+    def in_folds(self, k):
         """
         Divide the data into k folds, maintaining the main proportion
 
-        :param integer k_folds: Number of folds
+        :param k: Number of folds
         :return: The folds
+        :rtype: List
+        """
+        random.seed(None)
+
+        data = self.as_raw_data()
+
+        # Remove the header
+        data.pop(0)
+
+        folds = [[] for i in range(k)]
+
+        for i in range(k):
+            folds[i].append(self.__attr)
+
+        for i in range(1, len(data) + 1):
+            sample_index = random.randint(len(data) - 1)
+            sample = data.pop(sample_index)
+            folds[k % i].append(sample)
+
+        return folds
+
+    def fold_handler(self, folds):
+        """
+        Transform a list of folds into a DataHandler
+
+        :param folds: A list of folds
+        :return: A DataHandler containing all samples on the list
+        :rtype: DataHandler
+        """
+        samples = []
+        # Joins the list of folds into a list of samples
+        for fold in folds:
+            samples += fold
+
+        samples.insert(0, self.__attr)
+        handler = DataHandler(samples, self.__class_attr)
+
+        return handler
+
+    def folds_handler(self, folds):
+        """
+        Transform a list of folds into a list of DataHandlers
+
+        :param folds: A list of folds
+        :return: A list of DataHandlers
+        """
+        folds_handler = [[] for i in range(len(folds))]
+
+        for i in range(len(folds)):
+            folds[i].insert(0, self.__attr)
+            folds_handler[i] = DataHandler(folds[i], self.__class_attr)
+
+        return folds_handler
+
+    def stratify(self, k_folds):
+        """
+        Divide the data into k normalized folds, maintaining the main proportion
+
+        :param integer k_folds: Number of folds
+        :return: The folds containing only each instance attributes
         :rtype: list
         """
 
@@ -224,6 +284,13 @@ class DataHandler(object):
         return folds
 
     def bootstrap(self, ratio=1.0):
+        """
+        Generates a list with refilling samples from the DataHandler's data
+
+        :param ratio: Percentage of the data size tha defines the generated bootstrap size
+        :return: A list containing the randomly chosen samples
+        :rtype: List
+        """
         data = self.as_raw_data()
 
         # Remove the header
@@ -239,6 +306,13 @@ class DataHandler(object):
         return bootstrap
 
     def bagging(self, k):
+        """
+        Generates a list of bootstrap DataHandlers
+
+        :param k: Number of bootstraps to be generated
+        :return: A list containing k DataHandlers from k bootstraps
+        :rtype: List of DataHandler
+        """
         bootstraps = []
 
         for i in range(k):

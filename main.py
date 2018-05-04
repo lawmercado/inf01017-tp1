@@ -24,18 +24,13 @@ def setup_logger():
 
     logger = logging.getLogger("main")
 
-    formater = logging.Formatter('%(levelname)s:%(name)s: %(message)s')
-    handler1 = logging.FileHandler('usr.log', mode="w")
-    handler1.setLevel(logging.INFO)
-    handler1.filter(MyFilter(logging.INFO))
-    handler1.setFormatter(formater)
-    logger.addHandler(handler1)
+    formatter = logging.Formatter("%(levelname)s: %(message)s")
 
-    handler2 = logging.FileHandler('dev.log', mode="w")
-    handler2.setLevel(logging.DEBUG)
-    handler2.filter(MyFilter(logging.DEBUG))
-    handler2.setFormatter(formater)
-    logger.addHandler(handler2)
+    handler = logging.FileHandler("output.log", mode="w")
+    handler.setLevel(logging.DEBUG)
+    handler.filter(MyFilter(logging.DEBUG))
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     logger.setLevel(logging.INFO)
 
@@ -85,7 +80,7 @@ if __name__ == '__main__':
 
             logger.info(random_trees_classification(data_handler, test_instances, 10))
 
-            print("See the log output is in dev.log")
+            print("See the log output is in output.log")
 
         else:
             raise AttributeError("Data set is not supported!")
