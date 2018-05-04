@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division
-from .classes.DecisionTree import DecisionTree
+from .classes.DecisionTreeID3 import DecisionTreeID3
 import sys
 
 
@@ -62,5 +62,21 @@ def knn(instances, test_instances, k):
 
 
 def dt(data_handler):
-    return DecisionTree(data_handler, data_handler.attributes())
+    return DecisionTreeID3(data_handler, data_handler.attributes())
+
+def random_trees(data_handler, test_instances, k):
+    trees = []
+    bag = data_handler.bagging(k)
+
+    for bootstrap in bag:
+        trees.append(DecisionTreeID3(bootstrap, bootstrap.attributes()))
+
+    instances = data_handler.as_instances()
+
+    trees = [dt(bag[0])]
+
+    for tree in trees:
+        print(tree)
+        print("Instance: " + str(instances[0][0]))
+        print("Classification: " + str(tree.classify(instances[0][0])))
 
