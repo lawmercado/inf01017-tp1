@@ -12,10 +12,10 @@ class ID3DecisionTree(object):
 
     __dt = None
 
-    def __init__(self, data_handler, attributes):
+    def __init__(self, data_handler):
         logger.debug("Generating tree...")
 
-        self.__dt = self.__generate(data_handler.discretize(), attributes)
+        self.__dt = self.__generate(data_handler.discretize(), data_handler.attributes())
 
         logger.debug("Generated tree: \n" + str(self))
 
@@ -48,7 +48,7 @@ class ID3DecisionTree(object):
             except ValueError:
                 # Quando o ganho é 0
                 most_informative_attr = attributes[0]
-                attributes.clear()
+                attributes = []
 
             by_attributes = data_handler.by_attributes()
 

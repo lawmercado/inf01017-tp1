@@ -17,12 +17,12 @@ class DataHandler(object):
 
     __header = []
     __data = []
-    __class_attr = ""
-    __idx_class_attr = -1
+    __class_attr = None
+    __idx_class_attr = None
     __data_by_attr = []
     __data_as_instances = []
 
-    def __init__(self, raw_data, class_attr, normalize=False):
+    def __init__(self, raw_data, class_attr, id_attr=None, normalize=False):
         """
         Constructor of the class
 
@@ -32,10 +32,9 @@ class DataHandler(object):
 
         self.__data = copy.deepcopy(raw_data)
         self.__header = self.__data.pop(0)
-        self.__idx_class_attr = self.__header.index(class_attr)
         self.__class_attr = class_attr
 
-        data_by_attr = ()
+        data_by_attr = []
 
         for idx_attr, attr in enumerate(self.__header):
             row_by_attr = []
@@ -43,7 +42,36 @@ class DataHandler(object):
             for row in self.__data:
                 row_by_attr.append(self.__process_raw_data_value(row[idx_attr]))
 
-            data_by_attr = data_by_attr + (row_by_attr,)
+            data_by_attr.append(row_by_attr)
+
+        # If present, removes id column
+        if id_attr is not None:
+            idx_id_attr = self.__header.index(id_attr)
+
+            data_by_attr.pop(idx_id_attr)
+            self.__header.pop(idx_id_attr)
+
+            for idx_data in range(0, len(self.__data)):
+                self.__data[idx_data].pop(idx_id_attr)
+
+        # After id column removal (if any), update the idx of class attr
+        self.__idx_class_attr = self.__header.index(class_attr)
+
+        # Moves the class column to the end of the data
+        if self.__idx_class_attr != (len(self.__header) - 1):
+            classes = data_by_attr.pop(self.__idx_class_attr)
+            header_class_item = self.__header.pop(self.__idx_class_attr)
+
+            for idx_data in range(0, len(self.__data)):
+                item = self.__data[idx_data].pop(self.__idx_class_attr)
+                self.__data[idx_data].append(item)
+
+            data_by_attr.append(classes)
+            self.__header.append(header_class_item)
+
+            self.__idx_class_attr = self.__header.index(self.__class_attr)
+
+        data_by_attr = tuple(data_by_attr)
 
         # Saves for further use
         if normalize:

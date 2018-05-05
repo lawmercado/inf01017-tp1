@@ -64,11 +64,13 @@ def knn_classification(instances, test_instances, k):
     return classified
 
 
-def decision_tree_classification(tree, test_instances):
+def decision_tree_classification(data_handler, test_instances):
     classified = []
 
+    tree = ID3DecisionTree(data_handler)
+
     for test_instance in test_instances:
-        classified.append((test_instance, tree.classify()))
+        classified.append((test_instance, tree.classify(test_instance)))
 
     return classified
 
@@ -80,7 +82,7 @@ def random_trees_classification(data_handler, test_instances, k):
     bag = data_handler.bagging(k)
 
     for bootstrap in bag:
-        trees.append(ID3DecisionTree(bootstrap, bootstrap.attributes()))
+        trees.append(ID3DecisionTree(bootstrap))
 
     for test_instance in test_instances:
         classifications = []

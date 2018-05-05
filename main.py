@@ -40,11 +40,7 @@ def setup_logger():
 if __name__ == '__main__':
     logger = setup_logger()
 
-    filename = "sets/benchmark.csv"
-    delimiter = ";"
-    class_attr = "Joga"
-
-    dsets = ["benchmark", "diabetes"]
+    dsets = ["benchmark", "diabetes", "wine", "ionosphere", "cancer"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="enables debugging", action="store_true")
@@ -60,6 +56,7 @@ if __name__ == '__main__':
             filename = ""
             delimiter = ""
             class_attr = ""
+            id_attr = None
 
             if args.data_set.strip() == "benchmark":
                 filename = "sets/benchmark.csv"
@@ -71,14 +68,32 @@ if __name__ == '__main__':
                 delimiter = ","
                 class_attr = "Outcome"
 
-            rows = list(csv.reader(open(filename, "r"), delimiter=delimiter))
-            data_handler = DataHandler(rows, class_attr)
+            elif args.data_set.strip() == "wine":
+                filename = "sets/wine.csv"
+                delimiter = ","
+                class_attr = "Type"
 
-            test_instances = [instance[0] for instance in data_handler.as_instances()][0:6]
+            elif args.data_set.strip() == "ionosphere":
+                filename = "sets/ionosphere.csv"
+                delimiter = ","
+                class_attr = "radar"
+
+            elif args.data_set.strip() == "cancer":
+                filename = "sets/cancer.csv"
+                delimiter = ","
+                class_attr = "diagnosis"
+                id_attr = "id"
+
+            rows = list(csv.reader(open(filename, "r"), delimiter=delimiter))
+            data_handler = DataHandler(rows, class_attr, id_attr)
+
+            # TODO: integrate with kfold crossvalidation
+
+            test_instances = [instance[0] for instance in data_handler.as_instances()]
 
             print("Processing...")
 
-            logger.info(random_trees_classification(data_handler, test_instances, 10))
+            logger.info(random_trees_classification(data_handler, test_instances, 20))
 
             print("See the log output is in output.log")
 
