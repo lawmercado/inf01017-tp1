@@ -9,8 +9,8 @@ import sys
 import argparse
 
 from data.handler import DataHandler
-from ml.supervised.algorithms import decision_tree_classification
-from ml.supervised.algorithms import random_trees_classification
+from ml.supervised.algorithms import id3_decision_tree
+from ml.supervised.algorithms import id3_random_forest
 
 
 def setup_logger():
@@ -40,11 +40,13 @@ def setup_logger():
 if __name__ == '__main__':
     logger = setup_logger()
 
-    dsets = ["benchmark", "diabetes", "wine", "ionosphere", "cancer"]
+    supported_data_sets = ["benchmark", "diabetes", "wine", "ionosphere", "cancer"]
+    supported_algorithms = ["id3_decision_tree", "id3_random_forest"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="enables debugging", action="store_true")
-    parser.add_argument("-ds", "--data_set", type=str, help="the data set to test. Options are " + str(dsets))
+    parser.add_argument("-ds", "--data_set", type=str, help="the data set to test. Options are " + str(supported_data_sets))
+    parser.add_argument("-alg", "--algorithm", type=str, help="the algorithm to use. Options are " + str(supported_algorithms))
 
     args = parser.parse_args()
 
@@ -52,7 +54,7 @@ if __name__ == '__main__':
         logger.setLevel(logging.DEBUG)
 
     if args.data_set is not None:
-        if args.data_set in dsets:
+        if args.data_set in supported_data_sets:
             filename = ""
             delimiter = ""
             class_attr = ""
@@ -89,11 +91,16 @@ if __name__ == '__main__':
 
             # TODO: integrate with kfold crossvalidation
 
-            test_instances = [instance[0] for instance in data_handler.as_instances()]
+            test_instances = [instance[0] for instance in data_handler.as_instances()][0:6]
 
             print("Processing...")
 
-            logger.info(random_trees_classification(data_handler, test_instances, 20))
+            if args.algorithm in supported_algorithms:
+                if args.algorithm == "id3_random_forest":
+                    logger.info(id3_random_forest(data_handler, test_instances, 20))
+
+                elif args.algorithm == "id3_decision_tree":
+                    logger.info(id3_decision_tree(data_handler, test_instances))
 
             print("See the log output is in output.log")
 

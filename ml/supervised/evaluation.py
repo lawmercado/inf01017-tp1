@@ -2,7 +2,7 @@
 
 from __future__ import division
 from __future__ import print_function
-from ml.supervised.algorithms import knn_classification, random_trees_classification
+from ml.supervised.algorithms import knn_classification, id3_random_forest
 
 
 def knn_kcrossvalidation(data_handler, knn_factor, k_folds):

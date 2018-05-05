@@ -13,11 +13,11 @@ class ID3DecisionTree(object):
     __dt = None
 
     def __init__(self, data_handler):
-        logger.debug("Generating tree...")
+        logger.info("Generating tree...")
 
         self.__dt = self.__generate(data_handler.discretize(), data_handler.attributes())
 
-        logger.debug("Generated tree: \n" + str(self))
+        logger.info("Generated tree: \n" + str(self))
 
     def __generate(self, data_handler, attributes):
         node = {"attr": None, "value": {}}

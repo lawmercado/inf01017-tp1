@@ -64,7 +64,7 @@ def knn_classification(instances, test_instances, k):
     return classified
 
 
-def decision_tree_classification(data_handler, test_instances):
+def id3_decision_tree(data_handler, test_instances):
     classified = []
 
     tree = ID3DecisionTree(data_handler)
@@ -75,7 +75,7 @@ def decision_tree_classification(data_handler, test_instances):
     return classified
 
 
-def random_trees_classification(data_handler, test_instances, k):
+def id3_random_forest(data_handler, test_instances, k):
     trees = []
     classified = []
 
