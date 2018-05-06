@@ -9,8 +9,7 @@ import sys
 import argparse
 
 from data.handler import DataHandler
-from ml.supervised.algorithms import id3_decision_tree
-from ml.supervised.algorithms import id3_random_forest
+from ml.supervised.evaluation import decision_tree_kcrossvalidation, random_forest_kcrossvalidation
 
 
 def setup_logger():
@@ -97,10 +96,10 @@ if __name__ == '__main__':
 
             if args.algorithm in supported_algorithms:
                 if args.algorithm == "id3_random_forest":
-                    logger.info(id3_random_forest(data_handler, test_instances, 20))
+                    logger.info(random_forest_kcrossvalidation(data_handler, 5, 10))
 
                 elif args.algorithm == "id3_decision_tree":
-                    logger.info(id3_decision_tree(data_handler, test_instances))
+                    logger.info(decision_tree_kcrossvalidation(data_handler, 5))
 
             print("See the log output is in output.log")
 
