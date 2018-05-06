@@ -4,6 +4,7 @@
 from __future__ import division
 import logging
 import random
+import math
 import copy
 
 logger = logging.getLogger("main")
@@ -79,22 +80,6 @@ class DataHandler(object):
         else:
             self.__data_by_attr = data_by_attr
 
-    def header(self):
-        return list(self.__header)
-
-    def attributes(self):
-        attributes = list(self.__header)
-        attributes.remove(self.__class_attr)
-
-        return attributes
-
-    def class_attribute(self):
-        return self.__class_attr
-
-    def by_attributes(self):
-        if bool(self.__data_by_attr):
-            return copy.deepcopy(self.__data_by_attr)
-
     def __process_raw_data_value(self, record):
         value = record.strip()
 
@@ -162,6 +147,22 @@ class DataHandler(object):
 
         return std_deviations
 
+    def header(self):
+        return list(self.__header)
+
+    def attributes(self):
+        attributes = list(self.__header)
+        attributes.remove(self.__class_attr)
+
+        return attributes
+
+    def class_attribute(self):
+        return self.__class_attr
+
+    def by_attributes(self):
+        if bool(self.__data_by_attr):
+            return copy.deepcopy(self.__data_by_attr)
+
     def as_instances(self):
         """
         Convert the data to the attribute-classification format, aka: [((x11,...,x1n), y0),...,((xm1,...,xmn), ym)]
@@ -204,6 +205,12 @@ class DataHandler(object):
 
         return data
 
+    def as_raw_data(self):
+        attributes = copy.deepcopy([self.__header])
+        data = copy.deepcopy(self.__data)
+
+        return list(attributes + data)
+
     def get_average_for_attr(self, attr):
         data = self.by_attributes()
 
@@ -232,7 +239,7 @@ class DataHandler(object):
         folds = [[] for i in range(k)]
 
         for i in range(k):
-            folds[i].append(self.__attr)
+            folds[i].append(self.__header)
 
         for i in range(1, len(data) + 1):
             sample_index = random.randint(len(data) - 1)
@@ -254,7 +261,7 @@ class DataHandler(object):
         for fold in folds:
             samples += fold
 
-        samples.insert(0, self.__attr)
+        samples.insert(0, self.__header)
         handler = DataHandler(samples, self.__class_attr)
 
         return handler
@@ -269,7 +276,7 @@ class DataHandler(object):
         folds_handler = [[] for i in range(len(folds))]
 
         for i in range(len(folds)):
-            folds[i].insert(0, self.__attr)
+            folds[i].insert(0, self.__header)
             folds_handler[i] = DataHandler(folds[i], self.__class_attr)
 
         return folds_handler
@@ -385,27 +392,178 @@ class DataHandler(object):
 
         for attr in self.attributes():
             try:
-                average = float("{0:.3f}".format(self.get_average_for_attr(attr)))
-
                 idx_attr = raw_data[0].index(attr)
+
+                average = float("{0:.3f}".format(self.get_average_for_attr(attr)))
 
                 for idx_value in range(1, len(raw_data)):
                     if by_attributes[self.attributes().index(attr)][idx_value - 1] <= average:
-                        new_value = "<=" + str(average)
+                        new_value = "%f<=" + str(average)
                     else:
-                        new_value = ">" + str(average)
+                        new_value = "%f>" + str(average)
 
                     raw_data[idx_value][idx_attr] = new_value
+
             except TypeError:
                 pass
 
         return DataHandler(raw_data, self.__class_attr)
 
-    def as_raw_data(self):
-        attributes = copy.deepcopy([self.__header])
-        data = copy.deepcopy(self.__data)
+    def discretize_information_gain(self):
+        by_attributes = self.by_attributes()
+        raw_data = self.as_raw_data()
+        test_raw_data = self.as_raw_data()
 
-        return list(attributes + data)
+        for attr in self.attributes():
+            try:
+                idx_attr = raw_data[0].index(attr)
+
+                values = list(by_attributes[idx_attr])
+
+                values.sort()
+
+                for i in range(0, len(values) - 1):
+                    values[i] = (values[i] + values[i + 1] / 2)
+
+                values = list(set(values))
+
+                values.sort()
+
+                value_most_gain = 0
+                most_gain = 0
+
+                for compare in values:
+                    compare = float("{0:.3f}".format(compare))
+
+                    idx_attr = raw_data[0].index(attr)
+
+                    for idx_value in range(1, len(raw_data)):
+                        if by_attributes[self.attributes().index(attr)][idx_value - 1] <= compare:
+                            new_value = "%f<=" + str(compare)
+                        else:
+                            new_value = "%f>" + str(compare)
+
+                        test_raw_data[idx_value][idx_attr] = new_value
+
+                    gain = DataHandler(test_raw_data, self.__class_attr).information_gain(attr)
+
+                    if gain > most_gain:
+                        value_most_gain = compare
+                        most_gain = gain
+
+                for idx_value in range(1, len(raw_data)):
+                    if by_attributes[self.attributes().index(attr)][idx_value - 1] <= value_most_gain:
+                        new_value = "%f<=" + str(value_most_gain)
+                    else:
+                        new_value = "%f>" + str(value_most_gain)
+
+                    raw_data[idx_value][idx_attr] = new_value
+
+            except TypeError:
+                pass
+
+        return DataHandler(raw_data, self.__class_attr)
+
+    def discretize_quartile(self):
+        by_attributes = self.by_attributes()
+        raw_data = self.as_raw_data()
+
+        for attr in self.attributes():
+            try:
+                idx_attr = raw_data[0].index(attr)
+
+                values = list(by_attributes[idx_attr])
+                values.sort()
+
+                quartiles = self.generate_quartiles(values)
+
+                for idx_value in range(1, len(raw_data)):
+                    value = by_attributes[self.attributes().index(attr)][idx_value - 1]
+
+                    if value <= quartiles[0]:
+                        new_value = "%f<=" + str(quartiles[0])
+                    elif quartiles[0] < value <= quartiles[1]:
+                        new_value = str(quartiles[0]) + "<%f<=" + str(quartiles[1])
+                    elif quartiles[1] < value <= quartiles[2]:
+                        new_value = str(quartiles[1]) + "<%f<=" + str(quartiles[2])
+                    else:
+                        new_value = "%f>" + str(quartiles[2])
+
+                    raw_data[idx_value][idx_attr] = new_value
+
+            except TypeError:
+                pass
+
+        return DataHandler(raw_data, self.__class_attr)
+
+    def generate_quartiles(self, values):
+        n = len(values)
+        q1 = self.get_median(values[0:math.floor(n / 2)])
+        q2 = self.get_median(values)
+        q3 = self.get_median(values[math.ceil(n / 2): n])
+        quartiles = [q1, q2, q3]
+
+        return quartiles
+
+    def get_median(self, reference):
+        n = len(reference)
+
+        print(n)
+
+        if n % 2 == 0:
+            q = (reference[int(n / 2)] + reference[int(n / 2) - 1]) / 2
+        else:
+            q = reference[int(n / 2)]
+
+        return q
+
+    def information_gain(self, attr):
+        by_attributes = self.by_attributes()
+
+        value_count = {}
+        total_values = len(by_attributes[self.attributes().index(attr)])
+        info_attr = 0
+
+        for value in by_attributes[self.attributes().index(attr)]:
+            if value in list(value_count):
+                value_count[value] += 1
+            else:
+                value_count[value] = 1
+
+        for value in value_count:
+            info = self.filter_by_attr_value(attr, value).entropy()
+            info_attr += ((value_count[value] / total_values) * info)
+
+        logger.debug("Mean entropy for '" + attr + "': " + str(info_attr))
+
+        info = self.entropy()
+
+        return info - info_attr
+
+    def entropy(self):
+        data_by_class = self.by_class_attr_values()
+
+        total_instances = len(self.as_instances())
+
+        info = 0
+
+        for yi in data_by_class:
+            pi = len(data_by_class[yi]) / total_instances
+
+            info -= pi * math.log(pi, 2)
+
+        return info
+
+    def most_occurred_class(self):
+        by_class = self.by_class_attr_values()
+
+        most_occurred_class_count = max([len(value) for value in by_class.values()])
+        most_occurred_class = [k for k, value in by_class.items() if len(value) == most_occurred_class_count]
+
+        try:
+            return most_occurred_class[random.randint(0, 1)]
+        except IndexError:
+            return most_occurred_class[0]
 
     def __str__(self):
         return str(self.by_attributes())
