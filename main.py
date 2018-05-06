@@ -9,7 +9,7 @@ import sys
 import argparse
 
 from data.handler import DataHandler
-from ml.supervised.evaluation import decision_tree_kcrossvalidation, random_forest_kcrossvalidation
+from ml.supervised.evaluation import decision_tree_kcrossvalidation, random_forest_kcrossvalidation, get_statistics
 
 
 def setup_logger():
@@ -88,18 +88,14 @@ if __name__ == '__main__':
             rows = list(csv.reader(open(filename, "r"), delimiter=delimiter))
             data_handler = DataHandler(rows, class_attr, id_attr)
 
-            # TODO: integrate with kfold crossvalidation
-
-            test_instances = [instance[0] for instance in data_handler.as_instances()][0:6]
-
             print("Processing...")
 
             if args.algorithm in supported_algorithms:
                 if args.algorithm == "id3_random_forest":
-                    logger.info(random_forest_kcrossvalidation(data_handler, 5, 10))
+                    logger.info(get_statistics(random_forest_kcrossvalidation(data_handler, 5, 10)))
 
                 elif args.algorithm == "id3_decision_tree":
-                    logger.info(decision_tree_kcrossvalidation(data_handler, 5))
+                    logger.info(get_statistics(decision_tree_kcrossvalidation(data_handler, 5)))
 
             print("See the log output is in output.log")
 

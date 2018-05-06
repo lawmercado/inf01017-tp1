@@ -100,7 +100,7 @@ def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
     :return: List of tuple with values for accuracy and the F-measure
     """
     folds = data_handler.in_folds(k_folds)
-    folds_measures = []
+    folds_measures = {"acc": [], "f-measure": []}
 
     for index_fold, fold in enumerate(folds):
         aux_folds = list(folds)  # Copy the folds
@@ -114,13 +114,14 @@ def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
         classified_samples = id3_random_forest(train_handler, test_instances, k_trees)
 
         measures = validate(classified_samples, test_handler.as_instances(), train_handler.possible_classes())
-        folds_measures.append(measures)
+        folds_measures["acc"].append(measures["acc"])
+        folds_measures["f-measure"].append((measures["f-measure"]))
     return folds_measures
 
 
 def validate(predicted_samples, test_samples, classes):
 
-    measures = {"acc": [], "f-measure": []}
+    measures = {}
 
     # Initialize confusion matrix
     correct_classifications = 0
@@ -162,7 +163,7 @@ def validate(predicted_samples, test_samples, classes):
         total_false_negatives += false_negatives[a_class]
 
     acc = correct_classifications / len(predicted_samples)
-    measures["acc"].append(acc)
+    measures["acc"] = acc
 
     rev_micro = total_true_positives / (total_true_positives + total_false_negatives)
     prec_micro = total_true_positives / (total_true_positives + total_false_positives)
@@ -171,7 +172,7 @@ def validate(predicted_samples, test_samples, classes):
         f_measure = 0
     else:
         f_measure = 2 * (prec_micro * rev_micro) / (prec_micro + rev_micro)
-    measures["f-measure"].append(f_measure)
+    measures["f-measure"] = f_measure
 
     return measures
 
