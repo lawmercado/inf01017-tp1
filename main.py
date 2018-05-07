@@ -9,8 +9,7 @@ import argparse
 import random
 
 from data.handler import DataHandler
-from ml.supervised.algorithms import id3_decision_tree
-from ml.supervised.algorithms import id3_random_forest
+from ml.supervised.evaluation import decision_tree_kcrossvalidation, random_forest_kcrossvalidation, get_statistics
 
 
 def setup_logger():
@@ -42,6 +41,7 @@ if __name__ == '__main__':
 
     supported_data_sets = ["benchmark", "diabetes", "wine", "ionosphere", "cancer"]
     supported_algorithms = ["id3_decision_tree", "id3_random_forest"]
+    supported_discretizations = ["mean", "information_gain", "quartiles"]
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", help="enables debugging", action="store_true")
@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument("--algorithm", type=str, help="the algorithm to use. Options are " + str(supported_algorithms))
     parser.add_argument("--seed", type=int, help="the seed to consider in random numbers generation")
     parser.add_argument("--ntree", type=int, default=10, help="how many trees to generate. Defaults to 10")
+    parser.add_argument("--discretization", type=str, default="mean", help="the method to use in discretization. Options are " + str(supported_discretizations))
 
     args = parser.parse_args()
 
@@ -93,20 +94,24 @@ if __name__ == '__main__':
 
             rows = list(csv.reader(open(filename, "r"), delimiter=delimiter))
             data_handler = DataHandler(rows, class_attr, id_attr)
-            data_handler = data_handler.discretize()
 
-            # TODO: integrate with kfold crossvalidation
+            print("Discretizing...")
 
-            test_instances = [instance[0] for instance in data_handler.as_instances()][0:6]
+            if args.discretization == "mean":
+                data_handler = data_handler.discretize()
+            elif args.discretization == "quartile":
+                data_handler = data_handler.discretize_quartile()
+            elif args.discretization == "information_gain":
+                data_handler = data_handler.discretize_information_gain()
 
             print("Processing...")
 
             if args.algorithm in supported_algorithms:
                 if args.algorithm == "id3_random_forest":
-                    logger.info(id3_random_forest(data_handler, test_instances, args.ntree))
+                    print(get_statistics(random_forest_kcrossvalidation(data_handler, 10, args.ntree)))
 
                 elif args.algorithm == "id3_decision_tree":
-                    logger.info(id3_decision_tree(data_handler, test_instances))
+                    logger.info(get_statistics(decision_tree_kcrossvalidation(data_handler, 10)))
 
             print("See the log output is in output.log")
 

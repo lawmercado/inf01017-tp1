@@ -221,10 +221,20 @@ class DataHandler(object):
 
         return average / len(data[self.attributes().index(attr)])
 
+    def possible_classes(self):
+        instances = self.as_instances()
+
+        classes = []
+        seen = set()
+        for instance in instances:
+            if instance[1] not in seen:
+                classes.append(instance[1])
+                seen.add(instance[1])
+        return classes
+
     def in_folds(self, k):
         """
         Divide the data into k folds, maintaining the main proportion
-
         :param k: Number of folds
         :return: The folds
         :rtype: List
@@ -238,13 +248,10 @@ class DataHandler(object):
 
         folds = [[] for i in range(k)]
 
-        for i in range(k):
-            folds[i].append(self.__header)
-
-        for i in range(1, len(data) + 1):
-            sample_index = random.randint(len(data) - 1)
+        for i in range(len(data)):
+            sample_index = random.randint(0, len(data) - 1)
             sample = data.pop(sample_index)
-            folds[k % i].append(sample)
+            folds[i % k].append(sample)
 
         return folds
 
@@ -507,8 +514,6 @@ class DataHandler(object):
 
     def get_median(self, reference):
         n = len(reference)
-
-        print(n)
 
         if n % 2 == 0:
             q = (reference[int(n / 2)] + reference[int(n / 2) - 1]) / 2

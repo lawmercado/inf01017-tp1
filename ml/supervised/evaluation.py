@@ -2,7 +2,7 @@
 
 from __future__ import division
 from __future__ import print_function
-from ml.supervised.algorithms import knn_classification, id3_random_forest
+from ml.supervised.algorithms import knn_classification, id3_decision_tree, id3_random_forest
 
 
 def knn_kcrossvalidation(data_handler, knn_factor, k_folds):
@@ -67,76 +67,112 @@ def knn_repeatedkcrossvalidation(data_transformer, knn_factor, k_folds, repetiti
     return measures
 
 
-def random_trees_kcrossvalidation(data_handler, k_folds, classes):
+def decision_tree_kcrossvalidation(data_handler, k_folds):
     """
     :param data_handler: Raw data for the cross validation
     :param k_folds: Number of folds to generate
-    :param classes: List with possible class values
-    :return: Tuple with values for accuracy and the F-measure
+    :return: List of tuples with values for accuracy and the F-measure
     """
     folds = data_handler.in_folds(k_folds)
-
-    measures = {"acc": [], "f-measure": []}
+    folds_measures = []
 
     for index_fold, fold in enumerate(folds):
         aux_folds = list(folds)  # Copy the folds
-        test_fold = aux_folds.pop(index_fold)
+        test_fold = [aux_folds.pop(index_fold)]
 
         test_handler = data_handler.fold_handler(test_fold)
         train_handler = data_handler.fold_handler(aux_folds)
 
         # Train the algorithm & Classify the test fold
+        test_instances = [instance[0] for instance in test_handler.as_instances()]
+        classified_samples = id3_decision_tree(train_handler, test_instances)
 
-        # classified_samples = random_trees(train_fold_handler, test_fold_handler)
-        classified_samples = []
+        measures = validate(classified_samples, test_handler.as_instances(), train_handler.possible_classes())
+        folds_measures.append(measures)
+    return folds_measures
 
-        # Initialize confusion matrix
-        correct_classifications = []
-        true_positives = []
-        true_negatives = []
-        false_positives = []
-        false_negatives = []
-        for i in range(len(classes)):
-            correct_classifications[i] = 0
-            true_positives[i] = 0
-            true_negatives[i] = 0
-            false_positives[i] = 0
-            false_negatives[i] = 0
 
-        # Compare classified samples with the test set
-        for (predicted_sample, test_sample) in zip(classified_samples, fold):
-            for class_index in range(len(classes)):
-                if predicted_sample[class_index] == test_sample[class_index]:
-                    correct_classifications[class_index] += 1
-                    if predicted_sample[class_index] == classes[class_index]:
-                        true_positives[class_index] += 1
-                    else:
-                        true_negatives[class_index] += 1
-                elif predicted_sample[class_index] == classes[class_index]:
-                    false_positives[class_index] += 1
+def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
+    """
+    :param data_handler: Raw data for the cross validation
+    :param k_folds: Number of folds to generate
+    :param k_trees: Number of trees in the forest
+    :return: List of tuple with values for accuracy and the F-measure
+    """
+    folds = data_handler.in_folds(k_folds)
+    folds_measures = {"acc": [], "f-measure": []}
+
+    for index_fold, fold in enumerate(folds):
+        aux_folds = list(folds)  # Copy the folds
+        test_fold = [aux_folds.pop(index_fold)]
+
+        test_handler = data_handler.fold_handler(test_fold)
+        train_handler = data_handler.fold_handler(aux_folds)
+
+        # Train the algorithm & Classify the test fold
+        test_instances = [instance[0] for instance in test_handler.as_instances()]
+        classified_samples = id3_random_forest(train_handler, test_instances, k_trees)
+
+        measures = validate(classified_samples, test_handler.as_instances(), train_handler.possible_classes())
+        folds_measures["acc"].append(measures["acc"])
+        folds_measures["f-measure"].append((measures["f-measure"]))
+    return folds_measures
+
+
+def validate(predicted_samples, test_samples, classes):
+
+    measures = {}
+
+    # Initialize confusion matrix
+    correct_classifications = 0
+    true_positives = {}
+    true_negatives = {}
+    false_positives = {}
+    false_negatives = {}
+    for a_class in classes:
+        true_positives[a_class] = 0
+        true_negatives[a_class] = 0
+        false_positives[a_class] = 0
+        false_negatives[a_class] = 0
+
+    # Compare classified samples with the test set
+    for (predicted_sample, test_sample) in zip(predicted_samples, test_samples):
+        # If right prediction
+        if predicted_sample[1] == test_sample[1]:
+            correct_classifications += 1
+            true_positives[predicted_sample[1]] += 1
+
+            for a_class in classes:
+                if a_class != predicted_sample[1]:
+                    true_negatives[a_class] += 1
+        # If wrong
+        else:
+            for a_class in classes:
+                if a_class == predicted_sample[1]:
+                    false_positives[a_class] += 1
                 else:
-                    false_negatives[class_index] += 1
+                    false_negatives[a_class] += 1
 
-        # Generate the statistics for each class
-        acc = 0
-        total_true_positives = 0
-        total_false_positives = 0
-        total_false_negatives = 0
-        for class_index in range(len(classes)):
-            acc += correct_classifications[class_index]
+    # Generate the statistics for each class
+    total_true_positives = 0
+    total_false_positives = 0
+    total_false_negatives = 0
+    for a_class in classes:
+        total_true_positives += true_positives[a_class]
+        total_false_positives += false_positives[a_class]
+        total_false_negatives += false_negatives[a_class]
 
-            total_true_positives += true_positives[class_index]
-            total_false_positives += false_positives[class_index]
-            total_false_negatives += false_negatives[class_index]
+    acc = correct_classifications / len(predicted_samples)
+    measures["acc"] = acc
 
-        acc = acc / len(classified_samples)
-        measures["acc"].append(acc)
+    rev_micro = total_true_positives / (total_true_positives + total_false_negatives)
+    prec_micro = total_true_positives / (total_true_positives + total_false_positives)
 
-        rev_micro = total_true_positives / (total_true_positives + total_false_negatives)
-        prec_micro = total_true_positives / (total_true_positives + total_false_positives)
-
+    if correct_classifications == 0:
+        f_measure = 0
+    else:
         f_measure = 2 * (prec_micro * rev_micro) / (prec_micro + rev_micro)
-        measures["f-measure"].append(f_measure)
+    measures["f-measure"] = f_measure
 
     return measures
 
