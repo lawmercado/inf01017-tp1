@@ -3,6 +3,8 @@
 
 from __future__ import division
 import logging
+import math
+import random
 
 logger = logging.getLogger("main")
 
@@ -11,10 +13,10 @@ class ID3DecisionTree(object):
 
     __dt = None
 
-    def __init__(self, data_handler, attributes):
+    def __init__(self, data_handler):
         logger.info("Generating tree...")
 
-        self.__dt = self.__generate(data_handler, attributes)
+        self.__dt = self.__generate(data_handler, data_handler.attributes())
 
         logger.info("Generated tree: \n" + str(self))
 
@@ -35,7 +37,7 @@ class ID3DecisionTree(object):
             return node
 
         else:
-            idx_most_informative_attr = self.__get_most_informative_attr(data_handler, attributes)
+            idx_most_informative_attr = self.__get_most_informative_attr(data_handler, self.__select_attributes(attributes))
             most_informative_attr = data_handler.attributes()[idx_most_informative_attr]
 
             logger.debug("Chosen attr: " + most_informative_attr)
@@ -87,6 +89,19 @@ class ID3DecisionTree(object):
             logger.debug("Info. gain for '" + attr + "': " + str(info_gain))
 
         return info_gain_by_attribute.index(max(info_gain_by_attribute))
+
+    def __select_attributes(self, attributes):
+        nattr = math.ceil(len(attributes) ** 0.5)
+
+        selected_attrs = []
+
+        while len(selected_attrs) < nattr:
+            selected_attr = attributes[random.randint(0, len(attributes) - 1)]
+
+            if selected_attr not in selected_attrs:
+                selected_attrs.append(selected_attr)
+
+        return selected_attrs
 
     def __tree_as_string(self, node, level):
         if node["attr"] is None:
