@@ -4,6 +4,8 @@
 from __future__ import division
 from .classes.id3_decision_tree import ID3DecisionTree
 import logging
+import math
+import random
 import sys
 
 logger = logging.getLogger("main")
@@ -75,6 +77,20 @@ def id3_decision_tree(data_handler, test_instances):
     return classified
 
 
+def __select_attributes(attributes):
+    nattr = math.ceil(len(attributes) ** 0.5)
+
+    selected_attrs = []
+
+    while len(selected_attrs) < nattr:
+        selected_attr = attributes[random.randint(0, len(attributes) - 1)]
+
+        if selected_attr not in selected_attrs:
+            selected_attrs.append(selected_attr)
+
+    return selected_attrs
+
+
 def id3_random_forest(data_handler, test_instances, k):
     trees = []
     classified = []
@@ -82,7 +98,7 @@ def id3_random_forest(data_handler, test_instances, k):
     bag = data_handler.bagging(k)
 
     for bootstrap in bag:
-        trees.append(ID3DecisionTree(bootstrap))
+        trees.append(ID3DecisionTree(bootstrap, __select_attributes(bootstrap.attributes())))
 
     for test_instance in test_instances:
         classifications = []
