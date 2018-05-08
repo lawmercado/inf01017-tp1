@@ -100,7 +100,7 @@ def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
     :return: List of tuple with values for accuracy and the F-measure
     """
     folds = data_handler.in_folds(k_folds)
-    folds_measures = {"acc": [], "f-measure": []}
+    folds_measures = {"acc": [], "f-measure": [], "recall": [], "precision": []}
 
     for index_fold, fold in enumerate(folds):
         aux_folds = list(folds)  # Copy the folds
@@ -116,6 +116,8 @@ def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
         measures = validate(classified_samples, test_handler.as_instances(), train_handler.possible_classes())
         folds_measures["acc"].append(measures["acc"])
         folds_measures["f-measure"].append((measures["f-measure"]))
+        folds_measures["recall"].append(measures["recall"])
+        folds_measures["precision"].append(measures["precision"])
     return folds_measures
 
 
@@ -161,17 +163,22 @@ def validate(predicted_samples, test_samples, classes):
         total_true_positives += true_positives[a_class]
         total_false_positives += false_positives[a_class]
         total_false_negatives += false_negatives[a_class]
+        if len(classes) <= 2:
+            break
 
     acc = correct_classifications / len(predicted_samples)
     measures["acc"] = acc
 
-    rev_micro = total_true_positives / (total_true_positives + total_false_negatives)
-    prec_micro = total_true_positives / (total_true_positives + total_false_positives)
+    # Micro average for 3 or more possible classes
+    rev = total_true_positives / (total_true_positives + total_false_negatives)
+    prec = total_true_positives / (total_true_positives + total_false_positives)
+    measures["recall"] = rev
+    measures["precision"] = prec
 
     if correct_classifications == 0:
         f_measure = 0
     else:
-        f_measure = 2 * (prec_micro * rev_micro) / (prec_micro + rev_micro)
+        f_measure = 2 * (prec * rev) / (prec + rev)
     measures["f-measure"] = f_measure
 
     return measures
