@@ -234,7 +234,7 @@ class DataHandler(object):
 
     def in_folds(self, k):
         """
-        Divide the data into k folds, maintaining the main proportion
+        Divide the data into k folds
         :param k: Number of folds
         :return: The folds
         :rtype: List
@@ -242,6 +242,7 @@ class DataHandler(object):
         random.seed(None)
 
         data = self.as_raw_data()
+        classes = self.by_class_attr_values()
 
         # Remove the header
         data.pop(0)
@@ -290,31 +291,31 @@ class DataHandler(object):
 
     def stratify(self, k_folds):
         """
-        Divide the data into k normalized folds, maintaining the main proportion
+        Divide the data into k stratified folds, maintaining the main proportion
 
         :param integer k_folds: Number of folds
-        :return: The folds containing only each instance attributes
+        :return: The folds
         :rtype: list
         """
 
         random.seed(None)
 
-        instances = self.as_instances()
-        data = self.by_class_attr_values()
+        data = self.as_raw_data()
+        classes = self.by_class_attr_values()
 
         folds = [[] for i in range(0, k_folds)]
 
-        instances_per_fold = round(len(instances) / k_folds)
+        instances_per_fold = round(len(data) / k_folds)
 
-        for yi in data:
-            yi_proportion = len(data[yi]) / len(instances)
+        for yi in classes:
+            yi_proportion = len(classes[yi]) / len(data)
 
             counter = round(yi_proportion * instances_per_fold)
 
             while counter > 0:
                 try:
                     for idx in range(0, k_folds):
-                        instance = instances[data[yi].pop(random.randint(0, len(data[yi]) - 1))]
+                        instance = data[classes[yi].pop(random.randint(0, len(classes[yi]) - 1))]
 
                         folds[idx].append(instance)
 

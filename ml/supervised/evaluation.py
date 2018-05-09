@@ -73,7 +73,7 @@ def decision_tree_kcrossvalidation(data_handler, k_folds):
     :param k_folds: Number of folds to generate
     :return: List of tuples with values for accuracy and the F-measure
     """
-    folds = data_handler.in_folds(k_folds)
+    folds = data_handler.stratify(k_folds)
     folds_measures = []
 
     for index_fold, fold in enumerate(folds):
@@ -99,7 +99,7 @@ def random_forest_kcrossvalidation(data_handler, k_folds, k_trees):
     :param k_trees: Number of trees in the forest
     :return: List of tuple with values for accuracy and the F-measure
     """
-    folds = data_handler.in_folds(k_folds)
+    folds = data_handler.stratify(k_folds)
     folds_measures = {"acc": [], "f-measure": [], "recall": [], "precision": []}
 
     for index_fold, fold in enumerate(folds):
