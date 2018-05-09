@@ -74,7 +74,7 @@ def decision_tree_kcrossvalidation(data_handler, k_folds):
     :return: List of tuples with values for accuracy and the F-measure
     """
     folds = data_handler.stratify(k_folds)
-    folds_measures = []
+    folds_measures = {"acc": [], "f-measure": [], "recall": [], "precision": []}
 
     for index_fold, fold in enumerate(folds):
         aux_folds = list(folds)  # Copy the folds
@@ -88,7 +88,10 @@ def decision_tree_kcrossvalidation(data_handler, k_folds):
         classified_samples = id3_decision_tree(train_handler, test_instances)
 
         measures = validate(classified_samples, test_handler.as_instances(), train_handler.possible_classes())
-        folds_measures.append(measures)
+        folds_measures["acc"].append(measures["acc"])
+        folds_measures["f-measure"].append((measures["f-measure"]))
+        folds_measures["recall"].append(measures["recall"])
+        folds_measures["precision"].append(measures["precision"])
     return folds_measures
 
 
