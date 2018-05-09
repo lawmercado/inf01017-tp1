@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
             if args.discretization == "mean":
                 data_handler = data_handler.discretize()
-            elif args.discretization == "quartile":
+            elif args.discretization == "quartiles":
                 data_handler = data_handler.discretize_quartile()
             elif args.discretization == "information_gain":
                 data_handler = data_handler.discretize_information_gain()
