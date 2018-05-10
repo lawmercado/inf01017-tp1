@@ -91,17 +91,20 @@ class ID3DecisionTree(object):
         return info_gain_by_attribute.index(max(info_gain_by_attribute))
 
     def __select_attributes(self, attributes):
-        nattr = math.ceil(len(attributes) ** 0.5)
+        if len(attributes) > 10:
+            nattr = math.ceil(len(attributes) ** 0.5)
 
-        selected_attrs = []
+            selected_attrs = []
 
-        while len(selected_attrs) < nattr:
-            selected_attr = attributes[random.randint(0, len(attributes) - 1)]
+            while len(selected_attrs) < nattr:
+                selected_attr = attributes[random.randint(0, len(attributes) - 1)]
 
-            if selected_attr not in selected_attrs:
-                selected_attrs.append(selected_attr)
+                if selected_attr not in selected_attrs:
+                    selected_attrs.append(selected_attr)
 
-        return selected_attrs
+            return selected_attrs
+        else:
+            return attributes
 
     def __tree_as_string(self, node, level):
         if node["attr"] is None:

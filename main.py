@@ -9,6 +9,8 @@ import argparse
 import random
 
 from data.handler import DataHandler
+from ml.supervised.classes.id3_decision_tree import ID3DecisionTree
+from ml.supervised.algorithms import id3_decision_tree
 from ml.supervised.evaluation import decision_tree_kcrossvalidation, random_forest_kcrossvalidation, get_statistics
 
 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
                     print(get_statistics(random_forest_kcrossvalidation(data_handler, 10, args.ntree)))
 
                 elif args.algorithm == "id3_decision_tree":
-                    logger.info(get_statistics(decision_tree_kcrossvalidation(data_handler, 10)))
+                    ID3DecisionTree(data_handler)
 
             print("See the log output is in output.log")
 
